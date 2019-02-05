@@ -14,6 +14,14 @@ pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
 xbee = None  # XBee radio object
 
+# Global Status, updated by various functions
+status = "ready"
+# "error"
+# "waiting"
+# "running"
+
+# add mission_completed global boolean?
+
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
 class DummyMessage:
     def __init__(self, data=None):
@@ -163,3 +171,49 @@ def comm_simulation(comm_file, xbee_callback):
         line = f.readline().strip()
         prev_time = curr_time
 
+# :param vehicle: vehicle object that represents drone
+# :param vehicle_type: vehicle type from configs file
+def update_thread(vehicle, vehicle_type, heading=False):
+    global status
+    print("Starting update thread")
+    while True:     # Change conditional
+        location = vehicle.location.global_frame
+        battery_level = vehicle.battery.level/100.0
+        update_message = {
+            "type": "update",
+            "vehicleType": vehicle_type,
+            "lat": location.lat,
+            "lon": location.lon,
+            "status": status,
+            "battery": battery_level    # To comply with format of 0 - 1
+        }
+
+        # Heading is optional; if true, include heading in update_message (direction in degrees)
+        if heading:
+            update_message["heading"] = vehicle.heading
+
+        ## Find a way to check for "error" state
+        # if not error_message:
+        #     update_message["errorMessage"] = error_message
+
+        print(update_message)
+        time.sleep(1)
+
+def set_status_ready():
+    global status
+    # if mission_completed is true
+    status = "ready"
+    # set mission_completed back to false
+
+def set_status_running():
+    global status
+    status = "running"
+    
+def set_status_waiting():
+    global status
+    # if mission_completed is false
+    status = "waiting"
+
+def set_status_error():
+    global status
+    status = "error"

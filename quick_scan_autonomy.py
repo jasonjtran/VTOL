@@ -9,7 +9,7 @@ from pymavlink import mavutil
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land
+from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, update_thread, set_status_ready, set_status_running, set_status_waiting, set_status_error
 
 search_area = None  # search area object, populated by callback on start
 
@@ -189,11 +189,19 @@ def quick_scan_autonomy(configs, radio):
     # Connect to vehicle
     vehicle = connect(connection_string, wait_ready=True)
 
+    # Starts the update thread
+    update = Thread(target=update_thread, args=(vehicle, configs["vehicle_type"]))
+    update.start()
+
     # Send mission to vehicle
     quick_scan_adds_mission(vehicle, waypoints[1])
 
     # Takeoff
     takeoff(configs["flight_mode"], vehicle, configs["altitude"])
+
+    # Change vehicle status to running
+    print("set status of vehicle to running")
+    autonomy.set_status_running()
 
     vehicle.mode = VehicleMode(configs["flight_mode"])
 
@@ -203,12 +211,20 @@ def quick_scan_autonomy(configs, radio):
             # TODO monitor pause, resume, stop variables
             print(vehicle.location.global_frame)
             time.sleep(1)
+        # Change vehicle status to waiting
+        autonomy.set_status_waiting()
     else:
         raise Exception("Guided mode not supported")
 
     land(vehicle)
+
+    # Change vehicle status to ready
+    autonomy.set_status_ready()
     
     # Wait for comm simulation thread to end
     if comm_sim:
         comm_sim.join()
+
+    # Ends update thread
+    update.join()
 
