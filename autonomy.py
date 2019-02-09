@@ -1,12 +1,9 @@
 import json
-import math
 import sys
 import subprocess
-from conversions import *
 import time
-from threading import Thread
-from serial import SerialException
-from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
+from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
+from dronekit import VehicleMode
 
 # Globals, updated by xBee callback function
 start_mission = False  # takeoff
@@ -26,7 +23,7 @@ class DummyMessage:
         self.remote_device = DummyRemoteDevice()
 
 
-# Dummy remote device object for use in DummyMessage, has fake address 0
+# Dummy remote device object for use in DummyMessage
 class DummyRemoteDevice:
     def __init__(self):
         pass
@@ -37,8 +34,9 @@ class DummyRemoteDevice:
 
 # Instantiates XBee device object
 def setup_xbee():
+    global xbee
+
     # Continues looking until connection is found
-    from digi.xbee.devices import XBeeDevice
     while (1):
         try:
             port_name = ""
@@ -56,10 +54,8 @@ def setup_xbee():
             xbee.open()
             return xbee
 
-        # FileNotFoundError and SerialException are thrown on Linux machines
-        # if error with opening XBee device, mac_xbee_port_name() will throw
-        # a ValueError if port name could not be found on a Mac
-        except (FileNotFoundError, SerialException, ValueError) as e:
+        # If error in setting up XBee, try again
+        except Exception as e:
             print(e)
             print("Connect the XBee radio!")
             time.sleep(5)
@@ -69,8 +65,8 @@ def setup_xbee():
 def mac_xbee_port_name():
     try:
         # System call to get port name of connected XBee radio
-        process = subprocess.Popen(["ls", "/dev/"], stdout=subprocess.PIPE, encoding="utf-8")
-        port_name, err = process.communicate()
+        port_name = subprocess.check_output(["ls", "/dev/"])
+
         i = port_name.index("tty.usbserial-")  # index in dev directory of port name
         return "/dev/" + port_name[i: i + 22]  # 22 is length of "tty.usbserial-" + 8-char port name
 
@@ -79,7 +75,7 @@ def mac_xbee_port_name():
 
 
 # Commands drone to take off by arming vehicle and flying to altitude
-def takeoff(flight_mode, vehicle, altitude):
+def takeoff(vehicle, altitude):
     print("Pre-arm checks")
     while not vehicle.is_armable:
         print("Waiting for vehicle to initialize")
@@ -91,11 +87,11 @@ def takeoff(flight_mode, vehicle, altitude):
     vehicle.armed = True
 
     while not vehicle.armed:
-       print("Waiting to arm vehicle")
-       time.sleep(1)
+        print("Waiting to arm vehicle")
+        time.sleep(1)
 
     print("Taking off")
-    vehicle.simple_takeoff(altitude) # take off to altitude
+    vehicle.simple_takeoff(altitude)  # take off to altitude
 
     # Wait until vehicle reaches minimum altitude
     while vehicle.location.global_relative_frame.alt < altitude * 0.95:
@@ -123,7 +119,6 @@ def acknowledge(address, received_type):
     }
     # xbee is None if comms is simulated
     if xbee:
-        from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
         # Instantiate a remote XBee device object to send data.
         send_xbee = RemoteXBeeDevice(xbee, address)
         xbee.send_data(send_xbee, json.dumps(ack))
@@ -140,7 +135,6 @@ def bad_msg(address, problem):
     }
     # xbee is None if comms is simulated
     if xbee:
-        from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
         # Instantiate a remote XBee device object to send data.
         send_xbee = RemoteXBeeDevice(xbee, address)
         xbee.send_data(send_xbee, json.dumps(msg))
@@ -150,10 +144,7 @@ def bad_msg(address, problem):
 
 # Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
 def comm_simulation(comm_file, xbee_callback):
-    try:
-        f = open(comm_file, "r")
-    except FileNotFoundError:
-        raise
+    f = open(comm_file, "r")
 
     line = f.readline().strip()
     prev_time = float(line[:line.index("~")])
@@ -210,10 +201,7 @@ def update_thread(vehicle, vehicle_type, address):
         #     update_message["errorMessage"] = error
 
         if xbee:
-            from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
             # Instantiate a remote XBee device object to send data.
             send_xbee = RemoteXBeeDevice(xbee, address)
             xbee.send_data(send_xbee, json.dumps(update_message))
-        else:
-            print(update_message)
         time.sleep(1)

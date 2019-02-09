@@ -11,7 +11,9 @@ install:
   - pip install pymavlink
   - pip install pyserial
   - pip install typing
+  - pip install ngcp-xbee
   
 script:
   - python2 tests/quick_scan_tests.py
+  - python2 tests/detailed_search_tests.py
 
