@@ -16,11 +16,8 @@ xbee = None  # XBee radio object
 
 # Global Status, updated by various functions
 status = "ready"
-# "error"
-# "waiting"
-# "running"
-
-# add mission_completed global boolean?
+heading = None
+mission_completed = False
 
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
 class DummyMessage:
@@ -171,49 +168,52 @@ def comm_simulation(comm_file, xbee_callback):
         line = f.readline().strip()
         prev_time = curr_time
 
+# :param new_status: new vehicle status to change to (refer to GCS formatting)
+def change_status(new_status):
+    global status
+    if new_status != "ready" and new_status != "running" and new_status != "waiting" and new_status != "error":
+        raise Exception("Error: Unsupported status for vehicle")
+    else:
+        status = new_status
+
+def include_heading():
+    global heading
+    heading = True
+
 # :param vehicle: vehicle object that represents drone
 # :param vehicle_type: vehicle type from configs file
-def update_thread(vehicle, vehicle_type, heading=False):
+def update_thread(vehicle, vehicle_type, address):
     global status
-    print("Starting update thread")
-    while True:     # Change conditional
+    global heading
+    global mission_completed
+
+    print("Starting update thread\n")
+    while True:
         location = vehicle.location.global_frame
-        battery_level = vehicle.battery.level/100.0
+        battery_level = vehicle.battery.level/100.0     # To comply with format of 0 - 1
+        if mission_completed:
+            status = "ready"    # ready for a new mission
         update_message = {
             "type": "update",
             "vehicleType": vehicle_type,
             "lat": location.lat,
             "lon": location.lon,
             "status": status,
-            "battery": battery_level    # To comply with format of 0 - 1
+            "battery": battery_level
         }
 
-        # Heading is optional; if true, include heading in update_message (direction in degrees)
         if heading:
             update_message["heading"] = vehicle.heading
 
         ## Find a way to check for "error" state
-        # if not error_message:
-        #     update_message["errorMessage"] = error_message
+        # if error is not None:
+        #     update_message["errorMessage"] = error
 
-        print(update_message)
+        if xbee:
+            from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
+            # Instantiate a remote XBee device object to send data.
+            send_xbee = RemoteXBeeDevice(xbee, address)
+            xbee.send_data(send_xbee, json.dumps(update_message))
+        else:
+            print(update_message)
         time.sleep(1)
-
-def set_status_ready():
-    global status
-    # if mission_completed is true
-    status = "ready"
-    # set mission_completed back to false
-
-def set_status_running():
-    global status
-    status = "running"
-    
-def set_status_waiting():
-    global status
-    # if mission_completed is false
-    status = "waiting"
-
-def set_status_error():
-    global status
-    status = "error"
