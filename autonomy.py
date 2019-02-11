@@ -183,7 +183,7 @@ def update_thread(vehicle, vehicle_type, address):
         location = vehicle.location.global_frame
         battery_level = vehicle.battery.level/100.0     # To comply with format of 0 - 1
         if mission_completed:
-            status = "ready"    # ready for a new mission
+            status = "ready"
         update_message = {
             "type": "update",
             "vehicleType": vehicle_type,
@@ -195,10 +195,6 @@ def update_thread(vehicle, vehicle_type, address):
 
         if heading:
             update_message["heading"] = vehicle.heading
-
-        ## Find a way to check for "error" state
-        # if error is not None:
-        #     update_message["errorMessage"] = error
 
         if xbee:
             # Instantiate a remote XBee device object to send data.
