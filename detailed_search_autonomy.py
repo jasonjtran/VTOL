@@ -5,10 +5,11 @@ from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land
+from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, update_thread, change_status, setup_xbee
 import dronekit
 from threading import Thread
 import json
+import time
 POI_queue = queue.Queue()
 
 # Callback function for messages from GCS, parses JSON message and sets globals
@@ -89,16 +90,29 @@ def detailed_search_autonomy(configs):
 
     # Connect to vehicle
     vehicle = connect(connection_string, wait_ready=True)
+
+    # Starts update thread
+    update = Thread(target=update_thread, args=(vehicle, configs["vehicle_type"], configs["mission_control_MAC"],))
+    update.start()
+
     takeoff(vehicle, configs["altitude"])
     vehicle.mode = VehicleMode("GUIDED")
+    
+    # Change vehicle status to running
+    change_status("running")
 
     # Continuously fly to POIs
     while not autonomy.stop_mission:
-        if not POI_queue.empty() and not autonomy.pause_mission:
-            poi = POI_queue.get()
-            # TODO start CV scanning
-            orbit_poi(vehicle, poi, configs)
-            # TODO stop CV scanning
+        if not autonomy.pause_mission:
+            if not POI_queue.empty():
+                poi = POI_queue.get()
+                # TODO start CV scanning
+                orbit_poi(vehicle, poi, configs)
+                # TODO stop CV scanning
+            else:
+                change_status("waiting")
+        else:
+            change_status("paused")
 
         # Holds the copter in place if receives pause
         if autonomy.pause_mission:
@@ -109,6 +123,11 @@ def detailed_search_autonomy(configs):
 
     land(vehicle)
 
+    # Sets vehicle status to "ready"
+    change_status("ready")
+
     # Wait for comm simulation thread to end
     if comm_sim:
         comm_sim.join()
+
+    update.join()
