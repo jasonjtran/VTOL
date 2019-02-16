@@ -157,6 +157,10 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list):
 # :param configs: dict from configs file
 # :param radio: XBee radio object
 def quick_scan_autonomy(configs, autonomyToCV):
+    global xbee
+    global status
+    global heading  # set True if heading is wanted in the update_thread
+    global mission_completed
     comm_sim = None
 
     # If comms is simulated, start comm simulation thread
@@ -224,6 +228,12 @@ def quick_scan_autonomy(configs, autonomyToCV):
     
     # Sets vehicle status to "ready"
     change_status("ready")
+
+    # Vehicle has no more active tasks
+    change_status("waiting")
+    
+    # Ready for a new mission
+    mission_completed = True
 
     # Wait for comm simulation thread to end
     if comm_sim:
