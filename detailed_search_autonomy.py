@@ -9,7 +9,6 @@ from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, updat
 import dronekit
 from threading import Thread
 import json
-import time
 POI_queue = queue.Queue()
 
 # Callback function for messages from GCS, parses JSON message and sets globals
@@ -103,20 +102,18 @@ def detailed_search_autonomy(configs):
 
     # Continuously fly to POIs
     while not autonomy.stop_mission:
-        if not autonomy.pause_mission:
-            if not POI_queue.empty():
-                poi = POI_queue.get()
-                # TODO start CV scanning
-                orbit_poi(vehicle, poi, configs)
-                # TODO stop CV scanning
-            else:
-                change_status("waiting")
+        if not POI_queue.empty() and not autonomy.pause_mission:
+            poi = POI_queue.get()
+            # TODO start CV scanning
+            orbit_poi(vehicle, poi, configs)
+            # TODO stop CV scanning
         else:
-            change_status("paused")
+            change_status("waiting")    
 
         # Holds the copter in place if receives pause
         if autonomy.pause_mission:
             vehicle.mode = VehicleMode("ALT_HOLD")
+            change_status("paused")
         # Otherwise continue
         else:
             vehicle.mode = VehicleMode("GUIDED")

@@ -157,7 +157,6 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list):
 # :param configs: dict from configs file
 # :param radio: XBee radio object
 def quick_scan_autonomy(configs, autonomyToCV):
-    global xbee
     comm_sim = None
 
     # If comms is simulated, start comm simulation thread
@@ -232,4 +231,3 @@ def quick_scan_autonomy(configs, autonomyToCV):
 
     # Ends update thread
     update.join()
-
