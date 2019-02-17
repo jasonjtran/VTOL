@@ -179,7 +179,7 @@ def update_thread(vehicle, vehicle_type, address):
     global heading
 
     print("Starting update thread\n")
-    while True:
+    while not mission_completed:
         location = vehicle.location.global_frame
         battery_level = vehicle.battery.level/100.0     # To comply with format of 0 - 1
         update_message = {
@@ -198,6 +198,5 @@ def update_thread(vehicle, vehicle_type, address):
             # Instantiate a remote XBee device object to send data.
             send_xbee = RemoteXBeeDevice(xbee, address)
             xbee.send_data(send_xbee, json.dumps(update_message))
-        print(update_message)
         time.sleep(1)
         

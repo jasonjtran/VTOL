@@ -224,6 +224,7 @@ def quick_scan_autonomy(configs, autonomyToCV):
     
     # Sets vehicle status to "ready"
     change_status("ready")
+    autonomy.mission_completed = True
 
     # Wait for comm simulation thread to end
     if comm_sim:
