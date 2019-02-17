@@ -199,4 +199,3 @@ def update_thread(vehicle, vehicle_type, address):
             send_xbee = RemoteXBeeDevice(xbee, address)
             xbee.send_data(send_xbee, json.dumps(update_message))
         time.sleep(1)
-        
