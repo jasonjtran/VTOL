@@ -2,19 +2,20 @@ import json
 import sys
 import subprocess
 import time
-from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 from dronekit import VehicleMode
+from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 
-# Globals, updated by xBee callback function
+# Globals, updated by XBee callback function
 start_mission = False  # takeoff
 pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
 xbee = None  # XBee radio object
 
-# Global Status, updated by various functions
+# Global status, updated by various functions
 status = "ready"
 heading = None
 mission_completed = False
+
 
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
 class DummyMessage:
@@ -159,6 +160,7 @@ def comm_simulation(comm_file, xbee_callback):
         line = f.readline().strip()
         prev_time = curr_time
 
+
 # :param new_status: new vehicle status to change to (refer to GCS formatting)
 def change_status(new_status):
     global status
@@ -168,20 +170,19 @@ def change_status(new_status):
     else:
         status = new_status
 
+
 def include_heading():
     global heading
     heading = True
 
+
 # :param vehicle: vehicle object that represents drone
 # :param vehicle_type: vehicle type from configs file
 def update_thread(vehicle, vehicle_type, address):
-    global status
-    global heading
-
     print("Starting update thread\n")
     while not mission_completed:
         location = vehicle.location.global_frame
-        battery_level = vehicle.battery.level/100.0     # To comply with format of 0 - 1
+        battery_level = vehicle.battery.level / 100.0  # To comply with format of 0 - 1
         update_message = {
             "type": "update",
             "vehicleType": vehicle_type,
@@ -199,3 +200,5 @@ def update_thread(vehicle, vehicle_type, address):
             send_xbee = RemoteXBeeDevice(xbee, address)
             xbee.send_data(send_xbee, json.dumps(update_message))
         time.sleep(1)
+
+    change_status("ready")

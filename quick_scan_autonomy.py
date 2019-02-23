@@ -2,9 +2,10 @@ import json
 import math
 import time
 from conversions import *
-from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 from threading import Thread
 from pymavlink import mavutil
+from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
+from detailed_search import detailed_search
 
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
@@ -155,12 +156,7 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list):
 
 # Main autonomous flight thread
 # :param configs: dict from configs file
-# :param radio: XBee radio object
 def quick_scan_autonomy(configs, autonomyToCV):
-    global xbee
-    global status
-    global heading  # set True if heading is wanted in the update_thread
-    global mission_completed
     comm_sim = None
 
     # If comms is simulated, start comm simulation thread
@@ -224,21 +220,20 @@ def quick_scan_autonomy(configs, autonomyToCV):
     else:
         raise Exception("Guided mode not supported")
 
-    land(vehicle)
-    
-    # Sets vehicle status to "ready"
-    change_status("ready")
-    autonomy.mission_completed = True
+    # Switch to detailed search if role switching is enabled
+    if configs["quick_scan_specific"]["role_switching"]:
+        autonomy.mission_completed = True
+        update.join()
+        detailed_search(vehicle)
+    else:
+        land(vehicle)
 
-    # Vehicle has no more active tasks
-    change_status("waiting")
-    
-    # Ready for a new mission
-    mission_completed = True
+        # Ready for a new mission
+        autonomy.mission_completed = True
+
+        # Wait for update thread to end
+        update.join()
 
     # Wait for comm simulation thread to end
     if comm_sim:
         comm_sim.join()
-
-    # Ends update thread
-    update.join()
