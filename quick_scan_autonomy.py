@@ -220,11 +220,7 @@ def quick_scan_autonomy(configs, autonomyToCV):
     else:
         raise Exception("Guided mode not supported")
 
-<<<<<<< HEAD
     # Switch to detailed search if role switching is enabled
-=======
-    # Switch to detailed search
->>>>>>> 335ad600b24ecdefe358866e15abc1b762c96d2b
     if configs["quick_scan_specific"]["role_switching"]:
         autonomy.mission_completed = True
         update.join()
