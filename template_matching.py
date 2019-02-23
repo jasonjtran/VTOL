@@ -82,26 +82,25 @@ cv2.circle(result, (mp[0], mp[1]), 10, (255, 255, 255), 2)
 # calculate info
 ###########
 
-print("Coordinates: (%f, %f)" % (mp[0], mp[1]))
+print("Center Coordinates: (%f, %f)" % (mp[0], mp[1]))
 
 # vector of upper edge
 vec = dst[3][0] - dst[0][0]
-#print sqrt(np.dot(vec, vec))
+# print sqrt(np.dot(vec, vec))
 # zoom factor crop width / full width
-zoom = img2.shape[1] / sqrt(np.dot(vec, vec))
+# zoom = img2.shape[1] / sqrt(np.dot(vec, vec))
 # angle upper edge to x axis
 angle = acos(np.dot(vec, np.array([1, 0])) / (sqrt(vec[0]**2 + vec[1]**2)))    
 
-# print args[0], args[1]
-# print("middlepoint:", mp)
 # print("zoom:", zoom)
 print("Angle: %f" % angle)
-# print("corners:")
-# print("\n".join([str(i[0]) for i in dst]))
+print("Corners:")
+print("\n".join([str(i[0]) for i in dst]))
 
 
 # cv2.namedWindow("image", cv2.WINDOW_NORMAL)
-# cv2.imshow('image', img3)
-# cv2.waitKey(0)
+cv2.namedWindow("image", cv2.WINDOW_AUTOSIZE)
+cv2.imshow('image', img3)
+cv2.waitKey(0)
 cv2.imshow('image', result)
 cv2.waitKey(0)
