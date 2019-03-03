@@ -49,7 +49,6 @@ def template_match(full_image, template_image):
     img2 = cv2.polylines(img2, [np.int32(dst)], True, 255, 5, cv2.LINE_AA)
     img3 = cv2.drawMatches(img1, kp1, img2, kp2, matches, None, flags=2)
     result = cv2.polylines(full, [np.int32(dst)], True, (255, 255, 255), 5, cv2.LINE_AA)
-    # result = full.copy()
     cv2.circle(result, (mp[0], mp[1]), 2, (255, 255, 255), -1)
     cv2.circle(result, (mp[0], mp[1]), 10, (255, 255, 255), 2)
 
@@ -77,7 +76,5 @@ def template_match(full_image, template_image):
 
 if __name__ == '__main__':
     full_image = "images/mainimage.jpg"    
-    # template_image = "images/template.jpg"
-    # template_image = "images/templaterotate.jpg"
-    template_image = "images/templateright.jpg"
+    template_image = "images/template.jpg"
     template_match(full_image, template_image)
